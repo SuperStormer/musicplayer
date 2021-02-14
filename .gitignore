@@ -1,0 +1,5 @@
+.mypy_cache
+.vscode
+__pycache__
+musicplayer/uploads
+musicplayer/musicplayer.db
