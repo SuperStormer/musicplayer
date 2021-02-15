@@ -1,37 +1,157 @@
 (async function () {
-	let songsList = document.getElementById("songs-list");
-	let playButton = document.getElementById("play");
-	let pauseButton = document.getElementById("pause");
+	// element variables
+	let songsList = document.getElementById("playlists");
+	let playPauseButton = document.getElementById("play-pause");
 	let skipButton = document.getElementById("skip");
+	let uploadForm = document.getElementById("upload-form");
+	let uploadInput = document.getElementById("upload-input");
+	let progressAlert = document.getElementById("progress");
+	let errorAlert = document.getElementById("error");
+	let currSongIndicator = document.getElementById("current-song");
+	let songProgress = document.getElementById("song-progress");
+	let bodyTag = document.getElementsByTagName("body")[0];
 	let audio = document.createElement("audio");
-	let resp = await fetch("/api/playlists/list");
-	let playlists = await resp.json();
+
 	let songs = [];
-	playButton.addEventListener("click", play);
-	pauseButton.addEventListener("click", pause);
+	let currPlaylist = undefined;
+	let currSong = undefined;
+
+	// set event handlers
+	playPauseButton.addEventListener("click", playPause);
 	skipButton.addEventListener("click", nextSong);
-	for (let playlist of playlists) {
+	uploadForm.addEventListener("submit", uploadPlaylist);
+	audio.addEventListener("timeupdate", updateProgress);
+	window.onkeydown = (event) => {
+		if (event.target == bodyTag && event.key === " ") {
+			playPause();
+		}
+	};
+
+	// fetch playlists
+	let resp = await fetch("/api/playlists/list");
+	let playlists = (await resp.json()).sort((a, b) => {
+		// sort by title
+		let title1 = a.title;
+		let title2 = b.title;
+		if (title1 < title2) {
+			return -1;
+		} else if (title1 > title2) {
+			return 1;
+		} else {
+			return 0;
+		}
+	});
+	console.log(playlists);
+
+	// create playlist DOM elements
+	if (playlists.length == 0) {
 		let listItem = document.createElement("li");
-		listItem.setAttribute("data-id", playlist.id);
-		listItem.textContent = playlist.title;
-		listItem.addEventListener("click", selectPlaylist);
+		listItem.className = "list-group-item";
+		listItem.textContent = "No playlists found";
 		songsList.appendChild(listItem);
+	} else {
+		for (let playlist of playlists) {
+			let listItem = document.createElement("li");
+			listItem.className = "list-group-item list-group-item-action";
+			listItem.setAttribute("data-id", playlist.id);
+			listItem.textContent = playlist.title;
+			listItem.addEventListener("click", selectPlaylist);
+			songsList.appendChild(listItem);
+		}
 	}
+
 	function selectPlaylist(event) {
-		let currPlaylist = parseInt(event.target.getAttribute("data-id"), 10);
-		fetchSongs(currPlaylist).then(() => {
-			nextSong();
-			play();
-		});
+		errorAlert.hidden = true;
+		event.target.classList.add("list-group-item-dark");
+		let playlistId = parseInt(event.target.getAttribute("data-id"), 10);
+		currPlaylist = playlists.find((playlist) => playlist.id === playlistId);
+		fetchSongs(playlistId).then(nextSong);
 	}
-	async function fetchSongs(currPlaylist) {
-		songs = await fetch("/api/songs/list/" + currPlaylist);
+
+	async function fetchSongs(playlistId) {
+		songs = await fetch("/api/songs/list/" + playlistId).then((resp) => resp.json());
 	}
 	function play() {
+		playPauseButton.textContent = "Pause";
 		audio.play();
 	}
 	function pause() {
+		playPauseButton.textContent = "Play";
 		audio.pause();
 	}
-	function nextSong() {}
+	function playPause() {
+		errorAlert.hidden = true;
+		if (currSong) {
+			if (audio.paused) {
+				play();
+			} else {
+				pause();
+			}
+		} else {
+			errorAlert.textContent = "No playlist selected";
+			errorAlert.hidden = false;
+		}
+	}
+
+	function nextSong(event) {
+		if (event && event.target) {
+			event.target.blur();
+		}
+		console.log(songs);
+		if (songs.length > 0) {
+			let song = randomItem(songs);
+			while (currSong === song) {
+				//avoid playing same song twice in a row
+				song = randomItem(songs);
+			}
+			currSong = song;
+			console.log;
+			audio.setAttribute(
+				"src",
+				`/api/songs/play/${currPlaylist.folder}/${currSong.filename}`
+			);
+			currSongIndicator.textContent = currSong.title;
+			audio.load();
+			play();
+		} else {
+			errorAlert.textContent = "Playlist is empty";
+			errorAlert.hidden = false;
+		}
+	}
+	function updateProgress() {
+		songProgress.textContent = `${toMMSS(audio.currentTime)} / ${toMMSS(audio.duration)}`;
+	}
+	function uploadPlaylist(event) {
+		event.preventDefault();
+		let playlist = uploadInput.value;
+
+		progressAlert.hidden = false;
+		errorAlert.hidden = true;
+		fetch("/api/playlists/upload", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ playlist }),
+		}).then((resp) => {
+			progressAlert.hidden = true;
+			if (!resp.ok) {
+				resp.json().then((resp) => {
+					errorAlert.textContent = resp.error;
+					errorAlert.hidden = false;
+				});
+			}
+		});
+	}
+
+	function randomItem(arr) {
+		return arr[Math.floor(Math.random() * arr.length)];
+	}
+	function toMMSS(seconds) {
+		seconds = Math.floor(seconds);
+		// converts integer seconds to str "MM:SS"
+		let minutes = Math.floor(seconds / 60);
+		seconds %= 60;
+		return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+	}
 })();

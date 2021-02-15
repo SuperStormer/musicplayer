@@ -3,15 +3,39 @@
 	<head>
 		<title>Music Player</title>
 		<meta charset="utf-8" />
+		<link
+			rel="icon"
+			type="image/svg+xml"
+			href="https://upload.wikimedia.org/wikipedia/commons/2/2d/Play_Pause_icon_2283501.svg"
+		/>
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css"
+			integrity="sha512-P5MgMn1jBN01asBgU0z60Qk4QxiXo86+wlFahKrsQf37c9cro517WzVSPPV1tDKzhku2iJ2FVgL67wG03SGnNA=="
+			crossorigin="anonymous"
+		/>
+		<link rel="stylesheet" href="static/index.css" />
 	</head>
 	<body>
 		<main id="container">
-			<ul id="songs-list"></ul>
+			<ul id="playlists" class="list-group"></ul>
+			<form id="upload-form">
+				<header>Upload Playlist</header>
+				<div>
+					<input id="upload-input" class="form-control" placeholder="Youtube URL" />
+					<input type="submit" class="btn" />
+				</div>
+				<div id="progress" class="alert alert-success" hidden>Uploading...</div>
+			</form>
 			<div id="controls">
-				<button id="play">Play</button>
-				<button id="pause">Pause</button>
-				<button id="skip">Skip</button>
+				<div class="btn-group">
+					<button class="btn" id="play-pause">Play</button>
+					<button class="btn" id="skip">Skip</button>
+				</div>
+				<div id="current-song"></div>
+				<div id="song-progress"></div>
 			</div>
+			<div id="error" class="alert alert-danger" hidden></div>
 		</main>
 		<script src="static/index.js"></script>
 	</body>

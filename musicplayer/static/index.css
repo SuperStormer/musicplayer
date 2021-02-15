@@ -1,0 +1,22 @@
+#container {
+	margin: 10px;
+}
+#container > *,
+#upload-form * {
+	margin-bottom: 10px;
+}
+.btn,
+#playlists {
+	border: 2px solid lightslategray;
+}
+#upload-input {
+	width: unset;
+}
+#controls {
+	display: flex;
+	align-items: center;
+}
+
+#controls > * {
+	margin-left: 10px;
+}
