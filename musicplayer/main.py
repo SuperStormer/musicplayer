@@ -167,8 +167,9 @@ def delete(playlist_id):
 def play(folder, filename):
 	return send_file(UPLOAD_DIR.joinpath(secure_filename(folder), secure_filename(filename)))
 
+@app.before_first_request
 def main():
-	conn = sqlite3.connect(DB_PATH)
+	conn = get_conn()
 	cursor = conn.cursor()
 	with conn:
 		cursor.execute(
@@ -188,8 +189,6 @@ def main():
 				url TEXT
 			)"""
 		)
-	conn.close()
-	app.run()
 
 if __name__ == "__main__":
-	main()
+	app.run()
