@@ -9,5 +9,8 @@
 		"no-duplicate-case": "warn",
 		"no-lonely-if": "warn",
 		"no-unused-vars": "warn"
+	},
+	"globals": {
+		"swal": true
 	}
 }

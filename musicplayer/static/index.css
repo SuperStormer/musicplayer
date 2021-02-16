@@ -1,13 +1,21 @@
 #container {
-	margin: 10px;
+	margin: 15px;
 }
-#container > *,
-#upload-form * {
+#container > * {
 	margin-bottom: 10px;
 }
+
 .btn,
 #playlists {
 	border: 2px solid lightslategray;
+}
+
+#upload-form {
+	display: flex;
+	align-items: center;
+}
+#upload-form > * {
+	margin-right: 10px;
 }
 #upload-input {
 	width: unset;
@@ -18,5 +26,19 @@
 }
 
 #controls > * {
-	margin-left: 10px;
+	margin-right: 10px;
+}
+#playlists {
+	display: inline-flex;
+	min-width: 60%;
+}
+.playlist-buttons {
+	float: right;
+}
+
+.playlist-link {
+	padding: none;
+}
+.playlist-link-btn {
+	border: none;
 }

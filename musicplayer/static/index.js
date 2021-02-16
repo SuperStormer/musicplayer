@@ -3,6 +3,7 @@
 	let songsList = document.getElementById("playlists");
 	let playPauseButton = document.getElementById("play-pause");
 	let skipButton = document.getElementById("skip");
+	let songLink = document.getElementById("song-link");
 	let uploadForm = document.getElementById("upload-form");
 	let uploadInput = document.getElementById("upload-input");
 	let progressAlert = document.getElementById("progress");
@@ -12,6 +13,7 @@
 	let bodyTag = document.getElementsByTagName("body")[0];
 	let audio = document.createElement("audio");
 
+	// misc variables
 	let songs = [];
 	let currPlaylist = undefined;
 	let currSong = undefined;
@@ -21,9 +23,14 @@
 	skipButton.addEventListener("click", nextSong);
 	uploadForm.addEventListener("submit", uploadPlaylist);
 	audio.addEventListener("timeupdate", updateProgress);
+	audio.addEventListener("ended", nextSong);
 	window.onkeydown = (event) => {
-		if (event.target == bodyTag && event.key === " ") {
-			playPause();
+		if (event.target == bodyTag) {
+			if (event.key === " ") {
+				playPause();
+			} else if (event.key === "ArrowRight") {
+				nextSong();
+			}
 		}
 	};
 
@@ -52,10 +59,41 @@
 	} else {
 		for (let playlist of playlists) {
 			let listItem = document.createElement("li");
-			listItem.className = "list-group-item list-group-item-action";
+			listItem.className = "playlist-item list-group-item list-group-item-action";
 			listItem.setAttribute("data-id", playlist.id);
 			listItem.textContent = playlist.title;
 			listItem.addEventListener("click", selectPlaylist);
+
+			let buttons = document.createElement("div");
+			buttons.className = "playlist-buttons btn-group";
+
+			let updateButton = document.createElement("button");
+			updateButton.className = "btn";
+			updateButton.textContent = "Update";
+			updateButton.addEventListener("click", updatePlaylist);
+
+			let linkButton = document.createElement("a");
+			linkButton.className = "playlist-link btn";
+			linkButton.target = "_blank";
+			linkButton.rel = "noopener";
+			linkButton.href = playlist.url;
+			linkButton.textContent = "Link";
+			linkButton.addEventListener("click", (event) => {
+				event.stopPropagation();
+				event.target.blur();
+			});
+			/*let linkButton = document.createElement("button");
+			linkButton.className = "playlist-link-btn";
+			linkButton.textContent = "Link";
+			link.appendChild(linkButton);*/
+
+			let deleteButton = document.createElement("button");
+			deleteButton.className = "btn";
+			deleteButton.textContent = "Delete";
+			deleteButton.addEventListener("click", deletePlaylist);
+
+			buttons.append(updateButton, linkButton, deleteButton);
+			listItem.appendChild(buttons);
 			songsList.appendChild(listItem);
 		}
 	}
@@ -71,14 +109,67 @@
 	async function fetchSongs(playlistId) {
 		songs = await fetch("/api/songs/list/" + playlistId).then((resp) => resp.json());
 	}
+
+	function updatePlaylist(event) {
+		event.stopPropagation();
+		console.log(event.target.parentElement.parentElement);
+		let playlistID = parseInt(
+			event.target.parentElement.parentElement.getAttribute("data-id"),
+			10
+		);
+		console.log(playlistID);
+		progressAlert.textContent = "Updating...";
+		progressAlert.hidden = false;
+		fetch("/api/playlists/update/" + playlistID, { method: "POST" }).then((resp) => {
+			progressAlert.hidden = true;
+			if (!resp.ok) {
+				resp.json().then((resp) => {
+					errorAlert.textContent = resp.error;
+					errorAlert.hidden = false;
+				});
+			}
+		});
+	}
+
+	function deletePlaylist(event) {
+		event.stopPropagation();
+		swal({
+			title: "Are you sure?",
+			icon: "warning",
+			buttons: true,
+			dangerMode: true,
+		}).then((resp) => {
+			if (resp) {
+				let playlistID = parseInt(
+					event.target.parentElement.parentElement.getAttribute("data-id"),
+					10
+				);
+
+				progressAlert.textContent = "Deleting...";
+				progressAlert.hidden = false;
+				fetch("/api/playlists/delete/" + playlistID, { method: "POST" }).then((resp) => {
+					progressAlert.hidden = true;
+					if (!resp.ok) {
+						resp.json().then((resp) => {
+							errorAlert.textContent = resp.error;
+							errorAlert.hidden = false;
+						});
+					}
+				});
+			}
+		});
+	}
+
 	function play() {
 		playPauseButton.textContent = "Pause";
 		audio.play();
 	}
+
 	function pause() {
 		playPauseButton.textContent = "Play";
 		audio.pause();
 	}
+
 	function playPause() {
 		errorAlert.hidden = true;
 		if (currSong) {
@@ -105,12 +196,10 @@
 				song = randomItem(songs);
 			}
 			currSong = song;
-			console.log;
-			audio.setAttribute(
-				"src",
-				`/api/songs/play/${currPlaylist.folder}/${currSong.filename}`
-			);
+			audio.src = `/api/songs/play/${currPlaylist.folder}/${currSong.filename}`;
+			songLink.href = currSong.url;
 			currSongIndicator.textContent = currSong.title;
+
 			audio.load();
 			play();
 		} else {
@@ -118,13 +207,15 @@
 			errorAlert.hidden = false;
 		}
 	}
+
 	function updateProgress() {
 		songProgress.textContent = `${toMMSS(audio.currentTime)} / ${toMMSS(audio.duration)}`;
 	}
+
 	function uploadPlaylist(event) {
 		event.preventDefault();
 		let playlist = uploadInput.value;
-
+		progressAlert.textContent = "Uploading...";
 		progressAlert.hidden = false;
 		errorAlert.hidden = true;
 		fetch("/api/playlists/upload", {
@@ -148,8 +239,8 @@
 		return arr[Math.floor(Math.random() * arr.length)];
 	}
 	function toMMSS(seconds) {
-		seconds = Math.floor(seconds);
 		// converts integer seconds to str "MM:SS"
+		seconds = Math.floor(seconds);
 		let minutes = Math.floor(seconds / 60);
 		seconds %= 60;
 		return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;

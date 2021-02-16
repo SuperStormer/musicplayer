@@ -18,25 +18,30 @@
 	</head>
 	<body>
 		<main id="container">
+			<h1>Music Player</h1>
 			<ul id="playlists" class="list-group"></ul>
 			<form id="upload-form">
-				<header>Upload Playlist</header>
-				<div>
-					<input id="upload-input" class="form-control" placeholder="Youtube URL" />
-					<input type="submit" class="btn" />
-				</div>
-				<div id="progress" class="alert alert-success" hidden>Uploading...</div>
+				<header>Upload Playlist:</header>
+				<input id="upload-input" class="form-control" placeholder="Youtube URL" />
+				<input type="submit" class="btn" />
 			</form>
 			<div id="controls">
 				<div class="btn-group">
 					<button class="btn" id="play-pause">Play</button>
 					<button class="btn" id="skip">Skip</button>
+					<a class="btn" id="song-link" target="_blank" rel="noopener">Link</a>
 				</div>
 				<div id="current-song"></div>
 				<div id="song-progress"></div>
 			</div>
+			<div id="progress" class="alert alert-success" hidden></div>
 			<div id="error" class="alert alert-danger" hidden></div>
 		</main>
+		<script
+			src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js"
+			integrity="sha512-AA1Bzp5Q0K1KanKKmvN/4d3IRKVlv9PYgwFPvm32nPO6QS8yH1HO7LbgB1pgiOxPtfeg5zEn2ba64MUcqJx6CA=="
+			crossorigin="anonymous"
+		></script>
 		<script src="static/index.js"></script>
 	</body>
 </html>
