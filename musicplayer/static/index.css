@@ -6,7 +6,7 @@
 }
 
 .btn,
-#playlists {
+#playlists > li {
 	border: 2px solid lightslategray;
 }
 
@@ -19,6 +19,7 @@
 }
 #upload-input {
 	width: unset;
+	min-width: 40%;
 }
 #controls {
 	display: flex;

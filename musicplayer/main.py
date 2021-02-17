@@ -6,6 +6,7 @@ from urllib.parse import urlparse, urlunparse
 from flask import Flask, jsonify, render_template, request, g
 from flask.helpers import send_file
 from pytube import Playlist, YouTube
+from pytube.exceptions import RegexMatchError, VideoUnavailable
 from werkzeug.utils import secure_filename
 
 UPLOAD_DIR = Path(__file__).with_name("uploads")
@@ -44,11 +45,14 @@ def upload():
 	
 	if not playlist_url:
 		return jsonify({"error": "No url provided"}), 400
-	parse_result = urlparse(playlist_url)
-	if "youtube.com" not in parse_result.netloc:
+	if "youtube.com" not in playlist_url:
 		return jsonify({"error": f"Invalid url provided: {playlist_url!r}"}), 400
-	
-	playlist = Playlist(playlist_url)
+	try:
+		playlist = Playlist(playlist_url)
+	except RegexMatchError:
+		return jsonify({"error": f"Invalid url provided: {playlist_url!r}"}), 400
+	except VideoUnavailable as e:
+		return jsonify({"error": str(e)}), 400
 	if next(
 		cursor.execute("SELECT COUNT(title) FROM playlists WHERE title = ?", (playlist.title, ))
 	)[0] > 0:
@@ -134,7 +138,6 @@ def update(playlist_id):
 		db_video_urls = {url for _, _, url in db_videos}
 		
 		playlist = Playlist(playlist_url)
-		#curr_videos = playlist.videos
 		curr_video_urls = []  # videos fetched from the playlist
 		for url in playlist.video_urls:
 			#TODO kind hacky
@@ -148,10 +151,14 @@ def update(playlist_id):
 		
 		download_videos(cursor, to_add, playlist_folder, playlist_id)
 		
+		# delete songs no longer in the playlist
 		cursor.executemany("DELETE FROM songs WHERE id = ?", ((id, ) for id, _ in to_delete))
 		for _, filename in to_delete:
 			print(f"Deleted {filename!r}")
 			UPLOAD_DIR.joinpath(playlist_folder, filename).unlink()
+		
+		# update playlist title
+		cursor.execute("UPDATE playlists SET title = ? WHERE id = ?", (playlist.title, playlist_id))
 	return jsonify({"error": ""})
 
 @app.route("/api/playlists/delete/<int:playlist_id>", methods=["POST"])
