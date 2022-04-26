@@ -3,3 +3,4 @@
 __pycache__
 musicplayer/uploads
 musicplayer/musicplayer.db
+nohup.out

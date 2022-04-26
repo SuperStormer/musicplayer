@@ -85,7 +85,7 @@ async function fetchPlaylists() {
 			linkButton.target = "_blank";
 			linkButton.rel = "noopener";
 			linkButton.href = playlist.url;
-			linkButton.textContent = "Link";
+			linkButton.textContent = "Open";
 			linkButton.addEventListener("click", (event) => {
 				event.stopPropagation();
 				event.target.blur();

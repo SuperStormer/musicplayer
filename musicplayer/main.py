@@ -3,7 +3,7 @@ import sqlite3
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse
 
-from flask import Flask, jsonify, render_template, request, g
+from flask import Flask, jsonify, request, g
 from flask.helpers import send_file
 from pytube import Playlist, YouTube
 from pytube.exceptions import RegexMatchError, VideoUnavailable
@@ -34,7 +34,7 @@ def resource_not_found(e):
 
 @app.route("/")
 def index():
-	return render_template("index.html")
+	return app.send_static_file("index.html")
 
 @app.route("/api/playlists/upload", methods=["POST"])
 def upload():
@@ -58,9 +58,12 @@ def upload():
 	)[0] > 0:
 		return jsonify({"error": "Playlist already exists"}), 400
 	
-	folder = secure_filename(playlist.title)
-	if not folder or UPLOAD_DIR.joinpath(folder).exists():
+	if playlist.title is None:
 		folder = uuid.uuid4().hex
+	else:
+		folder = secure_filename(playlist.title)
+		if folder == "" or UPLOAD_DIR.joinpath(folder).exists():
+			folder = uuid.uuid4().hex
 	
 	with conn:
 		#create playlist
@@ -144,6 +147,7 @@ def update(playlist_id):
 			parse_res = list(urlparse(url))
 			parse_res[1] = parse_res[1].replace("www.", "")
 			curr_video_urls.append(urlunparse(parse_res))
+		
 		to_delete = [
 			(id, filename) for id, filename, url in db_videos if url not in curr_video_urls
 		]
